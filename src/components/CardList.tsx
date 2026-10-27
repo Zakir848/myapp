@@ -16,9 +16,10 @@ type CartItem = ProductItems & {
 type Props = {
   data: CartItem[];
   setOpen: (value: boolean) => void;
+  isPotriat: boolean;
 };
 
-export default function CardList({ data, setOpen }: Props) {
+export default function CardList({ data, setOpen, isPotriat }: Props) {
   const total = data.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
@@ -48,7 +49,7 @@ export default function CardList({ data, setOpen }: Props) {
 
       <FlatList
         data={data}
-        style={{ maxHeight: 320 }}
+        style={{ maxHeight: isPotriat ? 320 : 90 }}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (

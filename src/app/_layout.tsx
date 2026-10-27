@@ -345,7 +345,7 @@ export default function TabLayout() {
           },
         ]}
       >
-        <CardList data={cart} setOpen={setOpenCart} />
+        <CardList data={cart} setOpen={setOpenCart} isPotriat={isPortait} />
       </View>
       <View
         style={[
@@ -362,7 +362,7 @@ export default function TabLayout() {
         style={{
           position: "absolute",
           zIndex: 50,
-          top: "60%",
+          top: isPortait ? "60%" : "40%",
           left: "83%",
           gap: 5,
           flexDirection: "column",
