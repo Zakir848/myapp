@@ -10,7 +10,7 @@ import {
 
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-export type Categories = {
+type Categories = {
   id: number;
   name: string;
 };
@@ -18,20 +18,21 @@ export type Categories = {
 type Header = {
   search: string;
   setSearch: (value: string) => void;
-  category: (category: string) => void;
+  setSelect: (value: string) => void;
+  categoriesObject: Categories[]
 };
 
-const categoriesObject = [
-  { id: 1, name: "Meyvələr" },
-  { id: 2, name: "Ət məhsulları" },
-  { id: 3, name: "Hazır qidalar" },
-  { id: 4, name: "Səhər yeməkləri" },
-  { id: 5, name: "İçkilər" },
-  { id: 6, name: "Tütün məmulatları" },
-];
 
-export default function Header({ search, setSearch, category }: Header) {
+
+export default function Header({categoriesObject, search, setSearch, setSelect }: Header) {
   const [categories, setCategories] = useState<Categories[]>(categoriesObject);
+  const [activeCategory, setActiveCategory] = useState<string>("Hamısı");
+
+  const handleSelectCategory = (name: string) => {
+    setActiveCategory(name);
+
+    setSelect(name === "Hamısı" ? "" : name);
+  };
 
   return (
     <View style={styles.headerContainer}>
@@ -53,7 +54,7 @@ export default function Header({ search, setSearch, category }: Header) {
         >
           <Ionicons name="search" size={22} />
           <TextInput
-            placeholder="Məhsulu axtarın....  "
+            placeholder="Məhsulu axtarın...."
             onChangeText={setSearch}
             value={search}
             style={{
@@ -69,15 +70,22 @@ export default function Header({ search, setSearch, category }: Header) {
         horizontal
         contentContainerStyle={styles.listContainer}
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.card}
-            onPress={() => category(item.name)}
-          >
-            <Text style={styles.textCard}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const isActive = activeCategory === item.name;
+          return (
+            <TouchableOpacity
+              style={[styles.card, isActive && styles.activeCard]}
+              onPress={() => handleSelectCategory(item.name)}
+            >
+              {isActive && (
+                <Ionicons name="checkmark" size={22} color="#ffffff" />
+              )}
+              <Text style={[styles.textCard, isActive && styles.activeText]}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );
@@ -109,12 +117,14 @@ const styles = StyleSheet.create({
 
   listContainer: {
     backgroundColor: "#fff",
-    paddingLeft: 5,
-    paddingRight: 5,
+    paddingHorizontal: 5,
+    paddingBottom: 5,
     gap: 5,
   },
 
   card: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "black",
     borderRadius: 10,
@@ -122,7 +132,20 @@ const styles = StyleSheet.create({
   },
 
   textCard: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#526458",
+  },
+
+  activeCard: {
+    backgroundColor: "#237B29",
+    borderColor: "#237B29",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  activeText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
 });

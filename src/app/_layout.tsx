@@ -1,18 +1,32 @@
+import CardList from "@/components/CardList";
+import CreateForm from "@/components/CreateForm";
 import Header from "@/components/Header";
 import Products, { ProductItems } from "@/components/Products";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
+  Alert,
   FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 
 type CartItem = ProductItems & {
   quantity: number;
 };
+
+const categoriesObject = [
+  { id: 1, name: "Hamısı" },
+  { id: 2, name: "Meyvələr" },
+  { id: 3, name: "Ət məhsulları" },
+  { id: 4, name: "Hazır qidalar" },
+  { id: 5, name: "Səhər yeməkləri" },
+  { id: 6, name: "İçkilər" },
+  { id: 7, name: "Tütün məmulatları" },
+];
 
 const productsData = [
   // Meyvələr
@@ -163,28 +177,30 @@ const productsData = [
     name: "Holland pendiri",
     price: 6.2,
     category: "Səhər yeməkləri",
-    imageUrl: null,
+    imageUrl: "https://b7x9kq.arazmarket.az/storage/products/1000013596.png",
   },
   {
     id: 26,
     name: "Qaymaq",
     price: 3.5,
     category: "Səhər yeməkləri",
-    imageUrl: null,
+    imageUrl: "https://b7x9kq.arazmarket.az/storage/products/1000003191.png",
   },
   {
     id: 27,
     name: "Bal",
     price: 9.5,
     category: "Səhər yeməkləri",
-    imageUrl: null,
+    imageUrl:
+      "https://www.bingoldenbal.com/idea/hr/28/myassets/blogs/bal.jpg?revision=1610369068",
   },
   {
     id: 28,
     name: "Nesquik",
     price: 6.9,
     category: "Səhər yeməkləri",
-    imageUrl: null,
+    imageUrl:
+      "https://www.nestle-cereals.com/global/sites/g/files/qirczx806/files/styles/1_1_768px_width/public/2025-02/The%20pack%203D%20768x1006.png.webp?itok=yGI1AJ84",
   },
 
   // İçkilər
@@ -193,8 +209,7 @@ const productsData = [
     name: "Coca-Cola",
     price: 2.2,
     category: "İçkilər",
-    imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/e/e8/15-09-26-RalfR-WLC-0098_-_Coca-Cola_glass_bottle_%28Germany%29.jpg?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+    imageUrl: "https://b7x9kq.arazmarket.az/storage/products/1000012445.png",
   },
   {
     id: 30,
@@ -210,7 +225,7 @@ const productsData = [
     price: 3.5,
     category: "İçkilər",
     imageUrl:
-      "https://upload.wikimedia.org/wikipedia/commons/b/bf/Redbull_Dose.jpg?utm_source=az.wikipedia.org&utm_campaign=index&utm_content=original",
+      "https://minuman.com/cdn/shop/files/REDBULL_1200x.jpg?v=1738743145",
   },
 
   // Tütün məmulatları
@@ -226,14 +241,16 @@ const productsData = [
     name: "Sobranie",
     price: 6.5,
     category: "Tütün məmulatları",
-    imageUrl: null,
+    imageUrl:
+      "https://www.avteon.com/WebImages/ProductImages/b5bd166a-7279-4216-8a4b-883c8a70e8c7.webp",
   },
   {
     id: 42,
     name: "LD",
     price: 3.5,
     category: "Tütün məmulatları",
-    imageUrl: null,
+    imageUrl:
+      "https://www.avteon.com/WebImages/ProductImages/d1f2a813-eca5-402c-9a58-b6da5e3140f5.jpeg",
   },
 ];
 
@@ -241,25 +258,23 @@ export default function TabLayout() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<ProductItems[]>(productsData);
   const [search, setSearch] = useState<string>("");
+  const [openCart, setOpenCart] = useState<boolean>(false);
+  const [openCreateCard, setOpenCreateCard] = useState<boolean>(false);
+  const [selected, setSelected] = useState<string>("");
 
   const productFiltering = products.filter((value) => {
     const name = value.name.trim().toLocaleLowerCase("az");
     const query = search.trim().toLocaleLowerCase("az");
 
-    return name.includes(query);
+    const category = value.category.trim().toLocaleLowerCase("az");
+    const selectCategory = selected.trim().toLocaleLowerCase("az");
+
+    const matchesName = name.includes(query);
+
+    const matchesCategory = selected === "" || category === selectCategory;
+
+    return matchesName && matchesCategory;
   });
-
-  const categoryList = (category: string) => {
-    productFiltering.find((item) => {
-      const categories = item.category.trim().toLocaleLowerCase("az");
-      const query = category.trim().toLocaleLowerCase("az");
-
-      return categories.includes(query);
-    });
-    console.log(productFiltering);
-  };
-
-  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   const handleAdd = (data: ProductItems) => {
     setCart((prev) => {
@@ -275,53 +290,145 @@ export default function TabLayout() {
     });
   };
 
-  const handleRemove = () => {};
+  const handleRemove = (id: number) => {
+    setCart((prev) => {
+      const product = prev.find((item) => item.id === id);
+
+      if (!product) return prev;
+
+      if (product?.quantity > 1) {
+        return prev.map((item) =>
+          item.id == id ? { ...item, quantity: item.quantity - 1 } : item,
+        );
+      }
+
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
+  const handleRemoveProduct = (id: number) => {
+    Alert.alert("Warning", "Are your sure? ", [
+      {
+        text: "YES",
+        onPress: () =>
+          setProducts((prev) => prev.filter((item) => item.id !== id)),
+      },
+      {
+        text: "NO",
+      },
+    ]);
+  };
 
   const handleReset = () => {
     setCart([]);
   };
+  const { width, height } = useWindowDimensions();
+
+  const isPortait = height > width;
 
   return (
     <View style={styles.container}>
-      <Header search={search} setSearch={setSearch} category={categoryList} />
-      <TouchableOpacity
+      <Header
+        search={search}
+        setSearch={setSearch}
+        setSelect={setSelected}
+        categoriesObject={categoriesObject}
+      />
+      <Text style={{ paddingLeft: 15, fontSize: 24, fontWeight: "bold" }}>
+        {selected || "Hamısı"}
+      </Text>
+      <View
+        style={[
+          styles.cart,
+          {
+            display: openCart ? "flex" : "none",
+          },
+        ]}
+      >
+        <CardList data={cart} setOpen={setOpenCart} />
+      </View>
+      <View
+        style={[
+          styles.createForm,
+          {
+            display: openCreateCard ? "flex" : "none",
+          },
+        ]}
+      >
+        <CreateForm setProducts={setProducts} setOpen={setOpenCreateCard} />
+      </View>
+
+      <View
         style={{
           position: "absolute",
-          top: "70%",
+          zIndex: 50,
+          top: "60%",
           left: "83%",
-          zIndex: 10,
+          gap: 5,
+          flexDirection: "column",
         }}
-        onLongPress={handleReset}
       >
-        {cartCount > 0 && <Text style={styles.cartBadge}>{cartCount}</Text>}
+        <TouchableOpacity style={{}} onPress={() => setOpenCreateCard(true)}>
+          <Ionicons
+            name="add"
+            size={24}
+            color="#0F172A"
+            style={{
+              backgroundColor: "#00E676",
+              padding: 15,
+              borderRadius: 50,
+            }}
+          />
+        </TouchableOpacity>
 
-        <Ionicons
-          name="cart"
-          size={22}
-          color="#0F172A"
-          style={{
-            backgroundColor: "#00E676",
-            padding: 15,
-            borderRadius: 50,
-          }}
-        />
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => setOpenCart(true)}
+          onLongPress={handleReset}
+        >
+          {cart.length > 0 && (
+            <Text style={styles.cartBadge}>{cart.length}</Text>
+          )}
+
+          <Ionicons
+            name="cart"
+            size={24}
+            color="#0F172A"
+            style={{
+              backgroundColor: "#00E676",
+              padding: 15,
+              borderRadius: 50,
+            }}
+          />
+        </TouchableOpacity>
+      </View>
       {productFiltering.length != 0 ? (
         <FlatList
+          key={isPortait ? "landscape" : "portrait"}
           data={productFiltering}
+          numColumns={isPortait ? 2 : 4}
           keyExtractor={(item) => item.id.toString()}
-          columnWrapperStyle={{ gap: 5 }}
-          contentContainerStyle={styles.productContainer}
+          showsVerticalScrollIndicator={false}
+          columnWrapperStyle={{
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}
+          contentContainerStyle={[
+            styles.productContainer,
+            { paddingRight: isPortait ? 10 : 45 },
+          ]}
           renderItem={({ item }) => (
             <Products
               item={item}
+              quantity={cart.find((x) => x.id === item.id)?.quantity ?? 0}
+              isPortrait={isPortait}
               onAdd={handleAdd}
               handleRemove={handleRemove}
+              handleRemoveProduct={handleRemoveProduct}
             />
           )}
-          numColumns={2}
         />
       ) : (
+        // )
         <View style={styles.notfound}>
           <Text
             style={{
@@ -359,13 +466,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   productContainer: {
-    paddingBottom: 150,
-    width: "100%",
-    marginTop: 5,
-    paddingLeft: 5,
-    paddingRight: 10,
-
-    gap: 10,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 250,
   },
   notfound: {
     paddingBottom: 700,
@@ -408,5 +511,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 5,
     paddingBottom: 5,
+  },
+  createForm: {
+    position: "absolute",
+    backgroundColor: "#ffffff",
+    top: "20%",
+    left: "10%",
+    zIndex: 40,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#d3d3d3",
+    borderRadius: 10,
+    width: "80%",
+  },
+
+  cart: {
+    position: "absolute",
+    top: "20%",
+    left: "10%",
+    zIndex: 40,
+    borderColor: "#d3d3d3",
+    borderRadius: 10,
+    width: "80%",
   },
 });
